@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historique des transferts</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="./fts-base.css">
+</head>
+<body>
+
+<!--
+  ============================================================================
+  Bloc à copier dans le template du composant Angular "HistoriqueComponent".
+  ============================================================================
+-->
+<div class="fts-app" data-fts-page="historique">
+  <div class="fts-layout">
+
+    <div id="fts-sidebar-mount"></div>
+
+    <main class="fts-main">
+      <div class="fts-shell fts-page-historique">
+
+        <div class="fts-page-head">
+          <div class="fts-eyebrow">Historique</div>
+          <h1 class="fts-title">Historique des transferts</h1>
+          <p class="fts-subtitle">Retrouvez l'ensemble des fichiers envoyés et reçus depuis cet appareil.</p>
+        </div>
+
+        <div class="fts-stat-row">
+          <div class="fts-stat">
+            <div class="fts-stat-label">Total transferts</div>
+            <div class="fts-stat-value" id="historique-stat-total">0</div>
+          </div>
+          <div class="fts-stat">
+            <div class="fts-stat-label">Envoyés</div>
+            <div class="fts-stat-value" id="historique-stat-envoyes">0</div>
+          </div>
+          <div class="fts-stat">
+            <div class="fts-stat-label">Reçus</div>
+            <div class="fts-stat-value" id="historique-stat-recus">0</div>
+          </div>
+          <div class="fts-stat">
+            <div class="fts-stat-label">Volume total</div>
+            <div class="fts-stat-value" id="historique-stat-volume">0 o</div>
+          </div>
+        </div>
+
+        <div class="fts-card">
+          <div class="fts-card-body" style="padding-bottom: 0;">
+            <div class="fts-toolbar">
+              <div style="position: relative; flex: 1 1 280px; max-width: 280px;">
+                <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:.75rem; top:50%; transform:translateY(-50%); color: var(--fts-muted); font-size:.78rem;"></i>
+                <input type="search" id="historique-recherche" class="fts-input" placeholder="Rechercher un fichier…" style="padding-left: 2.1rem;">
+              </div>
+
+              <select id="historique-filtre-sens" class="fts-select" style="max-width: 160px;">
+                <option value="tous">Tous les sens</option>
+                <option value="Envoyé">Envoyés</option>
+                <option value="Reçu">Reçus</option>
+              </select>
+
+              <button type="button" class="fts-icon-action" id="historique-refresh-btn" title="Actualiser">
+                <i class="fa-solid fa-rotate"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="fts-table-wrap">
+            <table class="fts-table" id="historique-table">
+              <thead>
+                <tr>
+                  <th>Fichier</th>
+                  <th>Sens</th>
+                  <th>Taille</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="historique-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- État vide, affiché si l'API ne retourne aucun résultat ou si le filtre ne matche rien -->
+          <div class="fts-empty" id="historique-empty">
+            <i class="fa-regular fa-folder-open"></i>
+            <p>Aucun transfert pour l'instant.</p>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<!-- Client Socket.IO (temps réel) — doit être chargé avant fts-api.js -->
+<script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="./fts-api.js"></script>
+<script src="./fts-sidebar.js"></script>
+
+<script>
+  // ==========================================================================
+  // Page "Historique" : charge la liste réelle des fichiers via GET /api/files
+  // et la rafraîchit en temps réel via WebSocket ("files:updated").
+  // En Angular : un pipe de filtrage sur un Observable<FileMetadata[]>.
+  // ==========================================================================
+  (function () {
+    var root = document.querySelector('.fts-page-historique');
+    if (!root || !window.FtsApi) return;
+
+    var input = root.querySelector('#historique-recherche');
+    var selectSens = root.querySelector('#historique-filtre-sens');
+    var refreshBtn = root.querySelector('#historique-refresh-btn');
+    var tbody = root.querySelector('#historique-tbody');
+    var emptyState = root.querySelector('#historique-empty');
+    var table = root.querySelector('#historique-table');
+
+    var statTotal = root.querySelector('#historique-stat-total');
+    var statEnvoyes = root.querySelector('#historique-stat-envoyes');
+    var statRecus = root.querySelector('#historique-stat-recus');
+    var statVolume = root.querySelector('#historique-stat-volume');
+
+    var allFiles = [];
+
+    function directionLabel(direction) {
+      return direction === 'mobile-to-pc' ? 'Reçu' : 'Envoyé';
+    }
+
+    function updateStats(files) {
+      var sent = files.filter(function (f) {
+        return directionLabel(f.direction) === 'Envoyé';
+      }).length;
+      var received = files.length - sent;
+      var totalSize = files.reduce(function (sum, f) {
+        return sum + (f.size || 0);
+      }, 0);
+
+      statTotal.textContent = files.length;
+      statEnvoyes.textContent = sent;
+      statRecus.textContent = received;
+      statVolume.textContent = window.FtsApi.formatSize(totalSize);
+    }
+
+    function applyFilters() {
+      var term = (input.value || '').toLowerCase().trim();
+      var sens = selectSens.value;
+
+      var filtered = allFiles.filter(function (f) {
+        var matchesTerm = f.name.toLowerCase().indexOf(term) !== -1;
+        var matchesSens = sens === 'tous' || directionLabel(f.direction) === sens;
+        return matchesTerm && matchesSens;
+      });
+
+      renderRows(filtered);
+    }
+
+    function renderRows(files) {
+      tbody.innerHTML = '';
+      var sorted = files.slice().sort(function (a, b) {
+        return new Date(b.uploaded_at) - new Date(a.uploaded_at);
+      });
+
+      sorted.forEach(function (file) {
+        var direction = directionLabel(file.direction);
+        var icon = window.FtsApi.iconForFile(file.name);
+        var directionIcon = direction === 'Envoyé' ? 'fa-arrow-up' : 'fa-arrow-down';
+
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td><span class="fts-file-name-cell"><span class="fts-file-icon"><i class="fa-solid ' + icon + '"></i></span><span></span></span></td>' +
+          '<td><span class="fts-badge fts-badge-info"><i class="fa-solid ' + directionIcon + '"></i> ' + direction + '</span></td>' +
+          '<td class="fts-mono"></td>' +
+          '<td class="fts-mono"></td>' +
+          '<td><div class="fts-table-actions"><button type="button" class="fts-icon-action" title="Télécharger"><i class="fa-solid fa-download"></i></button></div></td>';
+
+        tr.querySelector('.fts-file-name-cell span').textContent = file.name;
+        tr.querySelectorAll('td')[2].textContent = window.FtsApi.formatSize(file.size);
+        tr.querySelectorAll('td')[3].textContent = window.FtsApi.formatDate(file.uploaded_at);
+
+        tr.querySelector('.fts-icon-action').addEventListener('click', function () {
+          window.FtsApi.downloadFile(file.id, file.name).catch(function (err) {
+            window.FtsApi.toast(err.message, 'error');
+          });
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      var hasResults = sorted.length > 0;
+      table.parentElement.classList.toggle('d-none', !hasResults);
+      emptyState.classList.toggle('d-none', hasResults);
+    }
+
+    function loadFiles() {
+      window.FtsApi.listFiles()
+        .then(function (res) {
+          allFiles = res.files || [];
+          updateStats(allFiles);
+          applyFilters();
+        })
+        .catch(function (err) {
+          window.FtsApi.toast(err.message || 'Impossible de charger l\'historique', 'error');
+        });
+    }
+
+    [input, selectSens].forEach(function (el) {
+      el.addEventListener('input', applyFilters);
+      el.addEventListener('change', applyFilters);
+    });
+
+    refreshBtn.addEventListener('click', loadFiles);
+
+    window.FtsApi.connectRealtime({
+      onEvent: function (eventName, data) {
+        if (eventName === 'files:updated') {
+          allFiles = data.files || [];
+          updateStats(allFiles);
+          applyFilters();
+        }
+      },
+    });
+
+    loadFiles();
+  })();
+</script>
+
+</body>
+</html>

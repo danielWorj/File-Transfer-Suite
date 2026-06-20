@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Envoyer des fichiers</title>
+
+<!-- Bootstrap (socle) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css">
+<!-- Font Awesome (icônes) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Feuille de style socle du projet -->
+<link rel="stylesheet" href="./fts-base.css">
+</head>
+<body>
+
+<!--
+  ============================================================================
+  Tout le contenu utile à intégrer dans le composant Angular est contenu
+  dans la div racine ".fts-app". Aucune règle de fts-base.css ne s'applique
+  en dehors de cette div : copier ce bloc tel quel dans le template du
+  composant "EnvoiComponent", et importer fts-base.css globalement
+  (ou en styleUrls du composant).
+  ============================================================================
+-->
+<div class="fts-app" data-fts-page="envoi">
+  <div class="fts-layout">
+
+    <div id="fts-sidebar-mount"></div>
+
+    <main class="fts-main">
+      <div class="fts-shell fts-page-envoi">
+
+        <div class="fts-page-head">
+          <div class="fts-eyebrow">Envoyer</div>
+          <h1 class="fts-title">Envoyer des fichiers</h1>
+          <p class="fts-subtitle">Renseignez le destinataire puis ajoutez les fichiers à transférer.</p>
+        </div>
+
+        <div class="row g-4">
+
+          <!-- ======================= Colonne gauche : formulaire ======================= -->
+          <div class="col-lg-7">
+            <div class="fts-card">
+              <div class="fts-card-header">
+                <h2>Destinataire</h2>
+              </div>
+              <div class="fts-card-body">
+
+                <div class="fts-field">
+                  <label class="fts-label" for="envoi-email-exp">Votre adresse e-mail</label>
+                  <input type="email" id="envoi-email-exp" class="fts-input" placeholder="vous@exemple.com">
+                </div>
+
+                <div class="fts-field">
+                  <label class="fts-label" for="envoi-nom-exp">Nom d'expéditeur <span class="fts-optional">(facultatif)</span></label>
+                  <input type="text" id="envoi-nom-exp" class="fts-input" placeholder="Votre nom">
+                </div>
+
+                <div class="fts-field">
+                  <label class="fts-label" for="envoi-email-dest">E-mail du / des destinataire(s)</label>
+                  <input type="text" id="envoi-email-dest" class="fts-input" placeholder="destinataire@exemple.com">
+                </div>
+
+                <div class="fts-field">
+                  <label class="fts-label" for="envoi-objet">Objet <span class="fts-optional">(facultatif)</span></label>
+                  <input type="text" id="envoi-objet" class="fts-input" placeholder="Objet du transfert">
+                </div>
+
+                <div class="fts-field">
+                  <label class="fts-label" for="envoi-message">Message <span class="fts-optional">(facultatif)</span></label>
+                  <textarea id="envoi-message" class="fts-textarea" placeholder="Ajouter un message pour le destinataire…"></textarea>
+                </div>
+
+                <div class="fts-icon-actions" role="group" aria-label="Options du transfert">
+                  <button type="button" class="fts-icon-action is-active" title="Protéger par mot de passe">
+                    <i class="fa-solid fa-lock"></i>
+                  </button>
+                  <button type="button" class="fts-icon-action" title="Date d'expiration">
+                    <i class="fa-regular fa-calendar"></i>
+                  </button>
+                  <button type="button" class="fts-icon-action" title="Limiter les téléchargements">
+                    <i class="fa-solid fa-download"></i>
+                  </button>
+                  <button type="button" class="fts-icon-action" title="Aperçu avant envoi">
+                    <i class="fa-regular fa-eye"></i>
+                  </button>
+                </div>
+
+                <button type="button" class="fts-btn fts-btn-primary fts-btn-block" id="envoi-submit-btn">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span id="envoi-submit-label">Transférer</span>
+                </button>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ======================= Colonne droite : fichiers ======================= -->
+          <div class="col-lg-5">
+            <div class="fts-card">
+              <div class="fts-card-header">
+                <h2>Fichiers sélectionnés</h2>
+                <span class="fts-meta" id="envoi-meta">0 fichier · 0 o</span>
+              </div>
+
+              <div class="fts-card-body">
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <div class="fts-dropzone" id="envoi-dropzone-fichiers">
+                      <i class="fa-solid fa-file-circle-plus"></i>
+                      <span>Ajouter des fichiers</span>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="fts-dropzone" id="envoi-dropzone-dossiers">
+                      <i class="fa-solid fa-folder-plus"></i>
+                      <span>Ajouter un dossier</span>
+                    </div>
+                  </div>
+                </div>
+
+                <input type="file" id="envoi-input-fichiers" multiple style="display:none;">
+                <input type="file" id="envoi-input-dossiers" webkitdirectory directory multiple style="display:none;">
+
+                <ul class="fts-file-list" id="envoi-file-list"></ul>
+
+                <div class="fts-empty" id="envoi-empty">
+                  <i class="fa-regular fa-folder-open"></i>
+                  <p>Aucun fichier sélectionné. Ajoutez des fichiers ou un dossier ci-dessus.</p>
+                </div>
+
+              </div>
+
+              <div class="fts-card-footer">
+                <button type="button" class="fts-btn fts-btn-ghost fts-btn-block" id="envoi-clear-all">
+                  <i class="fa-regular fa-trash-can"></i>
+                  Vider la sélection
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<!-- Bootstrap JS (composants interactifs éventuels) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="./fts-api.js"></script>
+<script src="./fts-sidebar.js"></script>
+
+<script>
+  // ==========================================================================
+  // Page "Envoi" : sélection de fichiers réels (input + drag&drop) puis
+  // upload effectif vers POST /api/upload avec suivi de progression.
+  // En Angular, cette logique migre dans les méthodes du composant
+  // (onAddFiles(), onRemoveFile(), onSubmit()...).
+  // ==========================================================================
+  (function () {
+    var root = document.querySelector('.fts-page-envoi');
+    if (!root || !window.FtsApi) return;
+
+    var fileList = root.querySelector('#envoi-file-list');
+    var emptyState = root.querySelector('#envoi-empty');
+    var metaEl = root.querySelector('#envoi-meta');
+    var submitBtn = root.querySelector('#envoi-submit-btn');
+    var submitLabel = root.querySelector('#envoi-submit-label');
+    var inputFichiers = root.querySelector('#envoi-input-fichiers');
+    var inputDossiers = root.querySelector('#envoi-input-dossiers');
+
+    // Pile de fichiers sélectionnés (objets File natifs), conservés ici
+    // tant qu'ils ne sont pas envoyés.
+    var selection = [];
+
+    function refreshMeta() {
+      var totalSize = selection.reduce(function (sum, f) {
+        return sum + f.size;
+      }, 0);
+      metaEl.textContent = selection.length + (selection.length > 1 ? ' fichiers · ' : ' fichier · ') + window.FtsApi.formatSize(totalSize);
+      emptyState.classList.toggle('d-none', selection.length > 0);
+      submitBtn.disabled = selection.length === 0;
+    }
+
+    function renderSelection() {
+      fileList.innerHTML = '';
+      selection.forEach(function (file, index) {
+        var li = document.createElement('li');
+        li.className = 'fts-file-item';
+        li.dataset.index = String(index);
+        li.innerHTML =
+          '<span class="fts-file-icon"><i class="fa-solid ' + window.FtsApi.iconForFile(file.name) + '"></i></span>' +
+          '<span class="fts-file-info" style="width:100%;">' +
+          '<span class="fts-file-name"></span>' +
+          '<span class="fts-file-meta"></span>' +
+          '<span class="fts-progress d-none"><span class="fts-progress-bar" style="width:0%;"></span></span>' +
+          '</span>' +
+          '<button type="button" class="fts-file-remove" title="Retirer"><i class="fa-solid fa-xmark"></i></button>';
+
+        li.querySelector('.fts-file-name').textContent = file.name;
+        li.querySelector('.fts-file-meta').textContent = window.FtsApi.formatSize(file.size);
+
+        li.querySelector('.fts-file-remove').addEventListener('click', function () {
+          selection.splice(index, 1);
+          renderSelection();
+        });
+
+        fileList.appendChild(li);
+      });
+      refreshMeta();
+    }
+
+    function addFiles(fileListLike) {
+      Array.prototype.forEach.call(fileListLike, function (file) {
+        selection.push(file);
+      });
+      renderSelection();
+    }
+
+    // ---------- Sélection via inputs natifs ----------
+
+    root.querySelector('#envoi-dropzone-fichiers').addEventListener('click', function () {
+      inputFichiers.click();
+    });
+    root.querySelector('#envoi-dropzone-dossiers').addEventListener('click', function () {
+      inputDossiers.click();
+    });
+    inputFichiers.addEventListener('change', function (e) {
+      addFiles(e.target.files);
+      inputFichiers.value = '';
+    });
+    inputDossiers.addEventListener('change', function (e) {
+      addFiles(e.target.files);
+      inputDossiers.value = '';
+    });
+
+    // ---------- Drag & drop réel ----------
+
+    ['envoi-dropzone-fichiers', 'envoi-dropzone-dossiers'].forEach(function (id) {
+      var zone = root.querySelector('#' + id);
+      if (!zone) return;
+      ['dragenter', 'dragover'].forEach(function (evt) {
+        zone.addEventListener(evt, function (e) {
+          e.preventDefault();
+          zone.classList.add('is-dragover');
+        });
+      });
+      ['dragleave'].forEach(function (evt) {
+        zone.addEventListener(evt, function (e) {
+          e.preventDefault();
+          zone.classList.remove('is-dragover');
+        });
+      });
+      zone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        zone.classList.remove('is-dragover');
+        if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+      });
+    });
+
+    // ---------- Vider la sélection ----------
+
+    root.querySelector('#envoi-clear-all').addEventListener('click', function () {
+      selection = [];
+      renderSelection();
+    });
+
+    // ---------- Envoi réel vers l'API ----------
+
+    function setItemProgress(index, percent) {
+      var item = fileList.querySelector('.fts-file-item[data-index="' + index + '"]');
+      if (!item) return;
+      var bar = item.querySelector('.fts-progress');
+      bar.classList.remove('d-none');
+      item.querySelector('.fts-progress-bar').style.width = percent + '%';
+    }
+
+    function uploadSequentially(files, index) {
+      if (index >= files.length) {
+        return Promise.resolve();
+      }
+      return window.FtsApi
+        .uploadFile(files[index], 'pc-to-mobile', function (percent) {
+          setItemProgress(index, percent);
+        })
+        .then(function () {
+          return uploadSequentially(files, index + 1);
+        });
+    }
+
+    submitBtn.addEventListener('click', function () {
+      if (selection.length === 0) return;
+
+      var filesToSend = selection.slice();
+      submitBtn.disabled = true;
+      submitLabel.textContent = 'Envoi en cours…';
+
+      window.FtsApi
+        .pair()
+        .then(function () {
+          return uploadSequentially(filesToSend, 0);
+        })
+        .then(function () {
+          window.FtsApi.toast('Transfert terminé avec succès', 'success');
+          selection = [];
+          renderSelection();
+        })
+        .catch(function (err) {
+          window.FtsApi.toast(err.message || "Échec de l'envoi", 'error');
+        })
+        .finally(function () {
+          submitBtn.disabled = selection.length === 0;
+          submitLabel.textContent = 'Transférer';
+        });
+    });
+
+    renderSelection();
+
+    // S'assure que cette interface PC est appairée dès le chargement,
+    // sans attendre que l'utilisateur passe par la page Recevoir.
+    window.FtsApi.pair().catch(function () {
+      /* le serveur peut ne pas être encore prêt : retentera à l'envoi */
+    });
+  })();
+</script>
+
+</body>
+</html>
