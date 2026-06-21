@@ -1,0 +1,28 @@
+name: fts_mobile
+description: "FTS — File Transfer Suite, version mobile Flutter."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  dio: ^5.7.0
+  socket_io_client: ^3.0.2
+  path_provider: ^2.1.4
+  file_picker: 10.3.7
+  archive: ^3.6.1
+  mobile_scanner: ^7.2.0
+  share_plus: ">=10.0.0 <13.1.0"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
