@@ -10,8 +10,9 @@
 
    IMPORTANT : le temps réel repose désormais sur Socket.IO (et non plus sur
    les WebSockets natifs comme avec FastAPI). La bibliothèque client Socket.IO
-   doit être chargée AVANT ce fichier, par ex. :
-     <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+   doit être chargée AVANT ce fichier, en local (pas de CDN, pour fonctionner
+   sans internet), par ex. :
+     <script src="./vendor/socketio/socket.io.min.js"></script>
 
    En Angular, ce fichier deviendrait un service injectable (FtsApiService)
    basé sur HttpClient + le client socket.io-client.
@@ -40,6 +41,16 @@
     if (token) {
       window.sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
     }
+  }
+
+  /**
+   * Oublie le token courant côté client. Utilisé quand le serveur signale
+   * que le token a été invalidé (ex : coupure WiFi détectée côté PC, voir
+   * l'événement temps réel "session:expired"), pour forcer un nouvel
+   * appairage plutôt que de continuer à utiliser un token périmé.
+   */
+  function clearToken() {
+    window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
   }
 
   function readTokenFromUrl() {
@@ -82,7 +93,7 @@
     return headers;
   }
 
-  function request(path, options) {
+ function request(path, options) {
     options = options || {};
     return ensureToken()
       .catch(function () {
@@ -95,6 +106,13 @@
           body: options.body,
         };
         return fetch(ORIGIN + path, opts).then(function (res) {
+          
+          // ----- Suppression du token si expiré -----
+          if (res.status === 401) {
+            clearToken();
+          }
+          // -------------------------------------------
+
           if (!res.ok) {
             return res
               .json()
@@ -140,27 +158,60 @@
   }
 
   /** Télécharge un fichier (token en en-tête Authorization -> on fetch en blob). */
-  function downloadFile(fileId, filename) {
+  /** Télécharge un fichier depuis le serveur avec suivi de progression */
+  function downloadFile(fileId, filename, onProgress) {
     return ensureToken()
       .catch(function () {
-        return null;
+        return null; // continue même sans token (le serveur gérera la sécurité)
       })
       .then(function () {
-        return fetch(ORIGIN + "/api/download/" + fileId, { headers: authHeaders() });
-      })
-      .then(function (res) {
-        if (!res.ok) throw new Error("Téléchargement impossible (" + res.status + ")");
-        return res.blob();
-      })
-      .then(function (blob) {
-        var url = window.URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        a.href = url;
-        a.download = filename || "fichier";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
+        return new Promise(function (resolve, reject) {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", ORIGIN + "/api/download/" + fileId);
+
+          // Injection des en-têtes d'authentification requis
+          var headers = authHeaders();
+          for (var key in headers) {
+            if (headers.hasOwnProperty(key)) {
+              xhr.setRequestHeader(key, headers[key]);
+            }
+          }
+
+          xhr.responseType = "blob";
+
+          // Gestion du suivi de progression du téléchargement
+          if (typeof onProgress === "function") {
+            xhr.addEventListener("progress", function (e) {
+              if (e.lengthComputable) {
+                var percent = Math.round((e.loaded / e.total) * 100);
+                onProgress(percent);
+              }
+            });
+          }
+
+          xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              var blob = xhr.response;
+              var url = window.URL.createObjectURL(blob);
+              var a = document.createElement("a");
+              a.href = url;
+              a.download = filename || "fichier";
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+              resolve();
+            } else {
+              reject(new Error("Téléchargement impossible (" + xhr.status + ")"));
+            }
+          };
+
+          xhr.onerror = function () {
+            reject(new Error("Erreur réseau lors du téléchargement."));
+          };
+
+          xhr.send();
+        });
       });
   }
 
@@ -237,7 +288,7 @@
       // explicitement plutôt que d'échouer en silence.
       console.error(
         "[FTS] Client Socket.IO introuvable. Ajoutez " +
-          '<script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script> ' +
+          '<script src="./vendor/socketio/socket.io.min.js"></script> ' +
           "avant fts-api.js."
       );
       return { close: function () {} };
@@ -404,6 +455,7 @@
   window.FtsApi = {
     getToken: getToken,
     setToken: setToken,
+    clearToken: clearToken,
     ensureToken: ensureToken,
     ping: ping,
     pair: pair,

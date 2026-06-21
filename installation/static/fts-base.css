@@ -1,0 +1,974 @@
+/* ==========================================================================
+   FTS — File Transfer Suite — feuille de style socle
+   --------------------------------------------------------------------------
+   - Toutes les règles sont scopées sous ".fts-app" : rien ne fuit en dehors
+     de ce conteneur, donc aucun conflit avec les styles globaux d'Angular
+     (Bootstrap inclus) lors de l'intégration dans les composants.
+   - Les variables Bootstrap (--bs-*) sont redéfinies UNIQUEMENT à l'intérieur
+     de .fts-app : Bootstrap reste inchangé partout ailleurs dans l'appli.
+   - Préfixe de classes : "fts-" pour tout ce qui est spécifique au design.
+     Les classes utilitaires Bootstrap (d-flex, mb-3, col-lg-7, ...) sont
+     utilisées telles quelles, car l'appli s'appuie sur Bootstrap.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+.fts-app {
+  /* ---------- Design tokens ---------- */
+  --fts-blue-900: #14224F;
+  --fts-blue-700: #1A2E66;   /* couleur primaire */
+  --fts-blue-600: #24398C;
+  --fts-blue-500: #2F5DD0;   /* accent interactif (liens, focus) */
+  --fts-blue-100: #EEF2FC;   /* fond bleu très pâle */
+  --fts-blue-050: #F6F8FC;   /* fond de page */
+
+  --fts-ink: #1A1F2B;
+  --fts-muted: #66708A;
+  --fts-border: #DCE2EC;
+  --fts-border-strong: #C3CCDE;
+  --fts-surface: #FFFFFF;
+
+  --fts-success: #1E8E5A;
+  --fts-success-soft: #E8F6EF;
+  --fts-danger: #C0392B;
+  --fts-danger-soft: #FBEAEA;
+  --fts-warning: #A9740F;
+  --fts-warning-soft: #FBF3E2;
+
+  --fts-radius-sm: 3px;
+  --fts-radius-md: 4px;
+
+  --fts-font-display: 'Sora', 'Inter', sans-serif;
+  --fts-font-body: 'Inter', sans-serif;
+  --fts-font-mono: 'IBM Plex Mono', monospace;
+
+  /* ---------- Bootstrap, customisé et scopé ---------- */
+  --bs-primary: var(--fts-blue-700);
+  --bs-primary-rgb: 26, 46, 102;
+  --bs-secondary: var(--fts-muted);
+  --bs-border-color: var(--fts-border);
+  --bs-border-radius: var(--fts-radius-md);
+  --bs-border-radius-sm: var(--fts-radius-sm);
+  --bs-border-radius-lg: var(--fts-radius-md);
+  --bs-body-font-family: var(--fts-font-body);
+  --bs-body-color: var(--fts-ink);
+  --bs-body-bg: var(--fts-blue-050);
+  --bs-link-color: var(--fts-blue-500);
+  --bs-link-hover-color: var(--fts-blue-700);
+  --bs-link-decoration: none;
+
+  display: block;
+  background-color: var(--fts-blue-050);
+  color: var(--fts-ink);
+  font-family: var(--fts-font-body);
+  font-size: 14.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fts-app * {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Layout général + barre latérale
+   ========================================================================== */
+
+.fts-layout {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+.fts-sidebar {
+  flex: 0 0 232px;
+  width: 232px;
+  min-height: 100vh;
+  background: var(--fts-surface);
+  border-right: 1px solid var(--fts-border);
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1rem;
+}
+
+.fts-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0.6rem 1.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--fts-border);
+}
+
+.fts-sidebar-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--fts-radius-sm);
+  background: var(--fts-blue-700);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex: 0 0 auto;
+}
+
+.fts-sidebar-brand-text {
+  font-family: var(--fts-font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--fts-blue-900);
+  line-height: 1.2;
+}
+
+.fts-sidebar-brand-text small {
+  display: block;
+  font-family: var(--fts-font-mono);
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--fts-muted);
+  letter-spacing: 0.04em;
+  margin-top: 1px;
+}
+
+.fts-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+}
+
+.fts-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--fts-radius-sm);
+  color: var(--fts-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.fts-sidebar-link i,
+.fts-sidebar-link .mdi {
+  width: 18px;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--fts-muted);
+  transition: color .15s ease;
+}
+
+.fts-sidebar-link:hover {
+  background: var(--fts-blue-050);
+  color: var(--fts-blue-700);
+}
+
+.fts-sidebar-link:hover i,
+.fts-sidebar-link:hover .mdi {
+  color: var(--fts-blue-700);
+}
+
+.fts-sidebar-link.is-active {
+  background: var(--fts-blue-100);
+  color: var(--fts-blue-700);
+  font-weight: 600;
+}
+
+.fts-sidebar-link.is-active i,
+.fts-sidebar-link.is-active .mdi {
+  color: var(--fts-blue-700);
+}
+
+.fts-sidebar-foot {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--fts-border);
+}
+
+.fts-sidebar-conn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--fts-radius-sm);
+  background: var(--fts-blue-050);
+  font-size: 0.74rem;
+  color: var(--fts-muted);
+  font-family: var(--fts-font-mono);
+}
+
+.fts-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .fts-layout {
+    flex-direction: column;
+  }
+
+  .fts-sidebar {
+    position: relative;
+    width: 100%;
+    min-height: auto;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--fts-border);
+    padding: 0.75rem 1rem;
+  }
+
+  .fts-sidebar-brand {
+    border-bottom: none;
+    padding: 0;
+    margin: 0 0.75rem 0 0;
+  }
+
+  .fts-sidebar-nav {
+    flex-direction: row;
+    margin-top: 0;
+  }
+
+  .fts-sidebar-link span {
+    display: none;
+  }
+
+  .fts-sidebar-foot {
+    display: none;
+  }
+}
+
+.fts-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.fts-page-head {
+  margin-bottom: 1.75rem;
+}
+
+.fts-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--fts-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fts-blue-500);
+  margin-bottom: 0.5rem;
+}
+
+.fts-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 1.5px;
+  background: var(--fts-blue-500);
+}
+
+.fts-title {
+  font-family: var(--fts-font-display);
+  font-weight: 600;
+  font-size: 1.65rem;
+  color: var(--fts-blue-900);
+  margin: 0 0 0.3rem;
+  letter-spacing: -0.01em;
+}
+
+.fts-subtitle {
+  color: var(--fts-muted);
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.fts-mono {
+  font-family: var(--fts-font-mono);
+}
+
+/* ==========================================================================
+   Carte
+   ========================================================================== */
+
+.fts-card {
+  background: var(--fts-surface);
+  border: 1px solid var(--fts-border);
+  border-radius: var(--fts-radius-md);
+  overflow: hidden;
+}
+
+.fts-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--fts-border);
+}
+
+.fts-card-header h2 {
+  font-family: var(--fts-font-display);
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--fts-blue-900);
+  margin: 0;
+}
+
+.fts-card-header .fts-meta {
+  font-family: var(--fts-font-mono);
+  font-size: 0.78rem;
+  color: var(--fts-muted);
+}
+
+.fts-card-body {
+  padding: 1.25rem;
+}
+
+.fts-card-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--fts-border);
+}
+
+/* ==========================================================================
+   Formulaires
+   ========================================================================== */
+
+.fts-field {
+  margin-bottom: 1rem;
+}
+
+.fts-field:last-child {
+  margin-bottom: 0;
+}
+
+.fts-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fts-ink);
+  margin-bottom: 0.4rem;
+}
+
+.fts-label .fts-optional {
+  font-weight: 400;
+  color: var(--fts-muted);
+  font-size: 0.76rem;
+}
+
+.fts-input,
+.fts-textarea,
+.fts-select {
+  width: 100%;
+  border: 1px solid var(--fts-border);
+  border-radius: var(--fts-radius-sm);
+  padding: 0.55rem 0.75rem;
+  font-family: var(--fts-font-body);
+  font-size: 0.88rem;
+  color: var(--fts-ink);
+  background: var(--fts-surface);
+  transition: border-color .15s ease;
+}
+
+.fts-textarea {
+  resize: vertical;
+  min-height: 76px;
+}
+
+.fts-input:focus,
+.fts-textarea:focus,
+.fts-select:focus {
+  outline: none;
+  border-color: var(--fts-blue-500);
+  box-shadow: 0 0 0 3px rgba(47, 93, 208, 0.12);
+}
+
+.fts-input::placeholder,
+.fts-textarea::placeholder {
+  color: #9AA3B7;
+}
+
+.fts-icon-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+
+.fts-icon-action {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fts-border);
+  border-radius: var(--fts-radius-sm);
+  background: var(--fts-surface);
+  color: var(--fts-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+}
+
+.fts-icon-action:hover {
+  border-color: var(--fts-blue-500);
+  color: var(--fts-blue-500);
+  background: var(--fts-blue-100);
+}
+
+.fts-icon-action.is-active {
+  border-color: var(--fts-blue-700);
+  color: var(--fts-blue-700);
+  background: var(--fts-blue-100);
+}
+
+/* ==========================================================================
+   Boutons
+   ========================================================================== */
+
+.fts-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--fts-radius-sm);
+  border: 1px solid transparent;
+  padding: 0.62rem 1.1rem;
+  font-family: var(--fts-font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.fts-btn-block {
+  width: 100%;
+}
+
+.fts-btn-primary {
+  background: var(--fts-blue-700);
+  border-color: var(--fts-blue-700);
+  color: #fff;
+}
+
+.fts-btn-primary:hover {
+  background: var(--fts-blue-900);
+  border-color: var(--fts-blue-900);
+}
+
+.fts-btn-outline {
+  background: var(--fts-surface);
+  border-color: var(--fts-border-strong);
+  color: var(--fts-ink);
+}
+
+.fts-btn-outline:hover {
+  border-color: var(--fts-blue-700);
+  color: var(--fts-blue-700);
+}
+
+.fts-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fts-muted);
+}
+
+.fts-btn-ghost:hover {
+  color: var(--fts-blue-700);
+}
+
+.fts-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Zone de dépôt (drag & drop)
+   ========================================================================== */
+
+.fts-dropzone {
+  border: 1.5px dashed var(--fts-border-strong);
+  border-radius: var(--fts-radius-md);
+  padding: 1.1rem;
+  text-align: center;
+  background: var(--fts-blue-050);
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.fts-dropzone:hover,
+.fts-dropzone.is-dragover {
+  border-color: var(--fts-blue-500);
+  background: var(--fts-blue-100);
+}
+
+.fts-dropzone i {
+  color: var(--fts-blue-500);
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+.fts-dropzone span {
+  font-size: 0.82rem;
+  color: var(--fts-muted);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Liste de fichiers
+   ========================================================================== */
+
+.fts-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fts-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--fts-border);
+}
+
+.fts-file-item:last-child {
+  border-bottom: none;
+}
+
+.fts-file-icon {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fts-blue-100);
+  color: var(--fts-blue-700);
+  border-radius: var(--fts-radius-sm);
+  font-size: 0.85rem;
+}
+
+.fts-file-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fts-file-name {
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: var(--fts-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fts-file-meta {
+  font-family: var(--fts-font-mono);
+  font-size: 0.74rem;
+  color: var(--fts-muted);
+}
+
+.fts-file-remove {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--fts-muted);
+  border-radius: var(--fts-radius-sm);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.fts-file-remove:hover {
+  color: var(--fts-danger);
+  background: var(--fts-danger-soft);
+}
+
+/* ==========================================================================
+   Badges de statut
+   ========================================================================== */
+
+.fts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--fts-radius-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fts-badge i {
+  font-size: 0.65rem;
+}
+
+.fts-badge-success {
+  background: var(--fts-success-soft);
+  color: var(--fts-success);
+}
+
+.fts-badge-danger {
+  background: var(--fts-danger-soft);
+  color: var(--fts-danger);
+}
+
+.fts-badge-pending {
+  background: var(--fts-warning-soft);
+  color: var(--fts-warning);
+}
+
+.fts-badge-info {
+  background: var(--fts-blue-100);
+  color: var(--fts-blue-700);
+}
+
+/* ==========================================================================
+   Barre de progression
+   ========================================================================== */
+
+.fts-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--fts-border);
+  border-radius: var(--fts-radius-sm);
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+
+.fts-progress-bar {
+  height: 100%;
+  background: var(--fts-blue-500);
+  border-radius: var(--fts-radius-sm);
+  transition: width .3s ease;
+}
+
+/* ==========================================================================
+   Statut de connexion / QR
+   ========================================================================== */
+
+.fts-qr-box {
+  width: 148px;
+  height: 148px;
+  margin: 0 auto;
+  border: 1px solid var(--fts-border);
+  border-radius: var(--fts-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fts-blue-050);
+  color: var(--fts-blue-700);
+  font-size: 3rem;
+}
+
+.fts-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+}
+
+.fts-status-dot.is-online {
+  background: var(--fts-success);
+}
+
+.fts-status-dot.is-offline {
+  background: var(--fts-danger);
+}
+
+.fts-status-dot.is-waiting {
+  background: var(--fts-warning);
+}
+
+/* ==========================================================================
+   Tableau (historique)
+   ========================================================================== */
+
+.fts-table-wrap {
+  overflow-x: auto;
+}
+
+.fts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.fts-table thead th {
+  text-align: left;
+  font-family: var(--fts-font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fts-muted);
+  font-weight: 500;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--fts-border);
+  white-space: nowrap;
+}
+
+.fts-table tbody td {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--fts-border);
+  color: var(--fts-ink);
+  vertical-align: middle;
+}
+
+.fts-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fts-table tbody tr {
+  transition: background-color .15s ease;
+}
+
+.fts-table tbody tr:hover {
+  background: var(--fts-blue-050);
+}
+
+.fts-table .fts-file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 500;
+}
+
+.fts-table-actions {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+   États vides
+   ========================================================================== */
+
+.fts-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--fts-muted);
+}
+
+.fts-empty i {
+  font-size: 1.6rem;
+  color: var(--fts-border-strong);
+  margin-bottom: 0.6rem;
+  display: block;
+}
+
+.fts-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   Divers
+   ========================================================================== */
+
+.fts-divider {
+  height: 1px;
+  background: var(--fts-border);
+  border: none;
+  margin: 1.25rem 0;
+}
+
+.fts-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.fts-toolbar .fts-input {
+  max-width: 280px;
+}
+
+.fts-stat-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.fts-stat {
+  border: 1px solid var(--fts-border);
+  border-radius: var(--fts-radius-md);
+  padding: 0.85rem 1.1rem;
+  background: var(--fts-surface);
+  min-width: 140px;
+}
+
+.fts-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fts-muted);
+  margin-bottom: 0.25rem;
+}
+
+.fts-stat-value {
+  font-family: var(--fts-font-mono);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--fts-blue-900);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  .fts-shell {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .fts-stat-row {
+    gap: 0.75rem;
+  }
+
+  .fts-stat {
+    min-width: 0;
+    flex: 1 1 calc(50% - 0.4rem);
+  }
+}
+
+/* ==========================================================================
+   Toasts (notifications API) — CORRIGÉS ET OPTIMISÉS
+   ========================================================================== */
+/* ==========================================================================
+   Toasts (notifications API) — CARTES FINEMENT COLORÉES
+   ========================================================================== */
+
+.fts-toast-stack {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999 !important; /* S'assure de passer au premier plan absolu */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+  width: calc(100% - 48px);
+}
+
+.fts-toast {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  
+  /* Arrière-plan totalement opaque (pas de transparence) et écriture sombre */
+  background-color: #ffffff !important; 
+  color: var(--fts-ink) !important;
+  
+  /* Ombre portée légère et ultra-nette pour casser l'effet flou */
+  box-shadow: 0 4px 16px rgba(20, 34, 79, 0.08); 
+  
+  /* Bordure fine tout autour et bordure accentuée sur la gauche */
+  border: 1px solid var(--fts-border);
+  border-left: 4px solid var(--fts-blue-500); /* Style bleu par défaut */
+  
+  transition: opacity .25s ease, transform .25s ease;
+  animation: fts-toast-in 0.28s cubic-bezier(0.21, 1.02, 0.43, 1.01) forwards;
+}
+
+/* Gestion de l'icône à l'intérieur */
+.fts-toast i {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  color: var(--fts-blue-500);
+}
+
+/* Gestion du texte du message */
+.fts-toast span {
+  line-height: 1.4;
+  word-break: break-word;
+  color: var(--fts-ink) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Déclinaisons : Couleurs fines unies par état (sans dégradé)
+   -------------------------------------------------------------------------- */
+
+/* BLEU — Informations */
+.fts-toast.is-info {
+  background-color: #f4f7fd !important;   /* Teinte bleue très fine */
+  border-color: #d2def5 !important;       /* Bordure fine assortie */
+  border-left-color: var(--fts-blue-500) !important;
+}
+.fts-toast.is-info i {
+  color: var(--fts-blue-500) !important;
+}
+
+/* VERT — Succès */
+.fts-toast.is-success {
+  background-color: var(--fts-success-soft) !important; /* Teinte verte fine (#E8F6EF) */
+  border-color: #cbe7da !important;
+  border-left-color: var(--fts-success) !important;     /* Vert d'accentuation */
+}
+.fts-toast.is-success i {
+  color: var(--fts-success) !important;
+}
+
+/* ORANGE — Alerte / Attention */
+.fts-toast.is-warning {
+  background-color: var(--fts-warning-soft) !important; /* Teinte orange fine (#FBF3E2) */
+  border-color: #f1e2c3 !important;
+  border-left-color: var(--fts-warning) !important;     /* Orange d'accentuation */
+}
+.fts-toast.is-warning i {
+  color: var(--fts-warning) !important;
+}
+
+/* ROUGE — Erreur */
+.fts-toast.is-error {
+  background-color: var(--fts-danger-soft) !important;  /* Teinte rouge fine (#FBEAEA) */
+  border-color: #f5d2d2 !important;
+  border-left-color: var(--fts-danger) !important;      /* Rouge d'accentuation */
+}
+.fts-toast.is-error i {
+  color: var(--fts-danger) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Animations et effets secondaires
+   -------------------------------------------------------------------------- */
+
+@keyframes fts-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.fts-status-dot.is-pulse {
+  animation: fts-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes fts-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

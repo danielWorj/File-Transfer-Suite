@@ -6,9 +6,9 @@
 <title>Envoyer des fichiers</title>
 
 <!-- Bootstrap (socle) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="./vendor/bootstrap/css/bootstrap.min.css">
 <!-- Font Awesome (icônes) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="./vendor/fontawesome/css/all.min.css">
 <!-- Feuille de style socle du projet -->
 <link rel="stylesheet" href="./fts-base.css">
 </head>
@@ -34,70 +34,13 @@
         <div class="fts-page-head">
           <div class="fts-eyebrow">Envoyer</div>
           <h1 class="fts-title">Envoyer des fichiers</h1>
-          <p class="fts-subtitle">Renseignez le destinataire puis ajoutez les fichiers à transférer.</p>
+          <p class="fts-subtitle">Ajoutez les fichiers à transférer, puis cliquez sur Envoyer.</p>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4 justify-content-center">
 
-          <!-- ======================= Colonne gauche : formulaire ======================= -->
-          <div class="col-lg-7">
-            <div class="fts-card">
-              <div class="fts-card-header">
-                <h2>Destinataire</h2>
-              </div>
-              <div class="fts-card-body">
-
-                <div class="fts-field">
-                  <label class="fts-label" for="envoi-email-exp">Votre adresse e-mail</label>
-                  <input type="email" id="envoi-email-exp" class="fts-input" placeholder="vous@exemple.com">
-                </div>
-
-                <div class="fts-field">
-                  <label class="fts-label" for="envoi-nom-exp">Nom d'expéditeur <span class="fts-optional">(facultatif)</span></label>
-                  <input type="text" id="envoi-nom-exp" class="fts-input" placeholder="Votre nom">
-                </div>
-
-                <div class="fts-field">
-                  <label class="fts-label" for="envoi-email-dest">E-mail du / des destinataire(s)</label>
-                  <input type="text" id="envoi-email-dest" class="fts-input" placeholder="destinataire@exemple.com">
-                </div>
-
-                <div class="fts-field">
-                  <label class="fts-label" for="envoi-objet">Objet <span class="fts-optional">(facultatif)</span></label>
-                  <input type="text" id="envoi-objet" class="fts-input" placeholder="Objet du transfert">
-                </div>
-
-                <div class="fts-field">
-                  <label class="fts-label" for="envoi-message">Message <span class="fts-optional">(facultatif)</span></label>
-                  <textarea id="envoi-message" class="fts-textarea" placeholder="Ajouter un message pour le destinataire…"></textarea>
-                </div>
-
-                <div class="fts-icon-actions" role="group" aria-label="Options du transfert">
-                  <button type="button" class="fts-icon-action is-active" title="Protéger par mot de passe">
-                    <i class="fa-solid fa-lock"></i>
-                  </button>
-                  <button type="button" class="fts-icon-action" title="Date d'expiration">
-                    <i class="fa-regular fa-calendar"></i>
-                  </button>
-                  <button type="button" class="fts-icon-action" title="Limiter les téléchargements">
-                    <i class="fa-solid fa-download"></i>
-                  </button>
-                  <button type="button" class="fts-icon-action" title="Aperçu avant envoi">
-                    <i class="fa-regular fa-eye"></i>
-                  </button>
-                </div>
-
-                <button type="button" class="fts-btn fts-btn-primary fts-btn-block" id="envoi-submit-btn">
-                  <i class="fa-solid fa-paper-plane"></i>
-                  <span id="envoi-submit-label">Transférer</span>
-                </button>
-
-              </div>
-            </div>
-          </div>
-
-          <!-- ======================= Colonne droite : fichiers ======================= -->
-          <div class="col-lg-5">
+          <!-- ======================= Fichiers ======================= -->
+          <div class="col-lg-8">
             <div class="fts-card">
               <div class="fts-card-header">
                 <h2>Fichiers sélectionnés</h2>
@@ -134,10 +77,20 @@
               </div>
 
               <div class="fts-card-footer">
-                <button type="button" class="fts-btn fts-btn-ghost fts-btn-block" id="envoi-clear-all">
-                  <i class="fa-regular fa-trash-can"></i>
-                  Vider la sélection
-                </button>
+                <div class="row g-2">
+                  <div class="col-6">
+                    <button type="button" class="fts-btn fts-btn-ghost fts-btn-block" id="envoi-clear-all">
+                      <i class="fa-regular fa-trash-can"></i>
+                      Vider la sélection
+                    </button>
+                  </div>
+                  <div class="col-6">
+                    <button type="button" class="fts-btn fts-btn-primary fts-btn-block" id="envoi-submit-btn">
+                      <i class="fa-solid fa-paper-plane"></i>
+                      <span id="envoi-submit-label">Envoyer</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -150,7 +103,7 @@
 </div>
 
 <!-- Bootstrap JS (composants interactifs éventuels) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="./vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="./fts-api.js"></script>
 <script src="./fts-sidebar.js"></script>
 

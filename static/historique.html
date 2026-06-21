@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Historique des transferts</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="./vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="./vendor/fontawesome/css/all.min.css">
 <link rel="stylesheet" href="./fts-base.css">
 </head>
 <body>
@@ -97,9 +97,10 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="./vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- Client Socket.IO (temps réel) — doit être chargé avant fts-api.js -->
-<script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
+ 
+<script src="./vendor/socketio/socket.io.min.js" crossorigin="anonymous"></script>
 <script src="./fts-api.js"></script>
 <script src="./fts-sidebar.js"></script>
 
@@ -221,6 +222,13 @@
           allFiles = data.files || [];
           updateStats(allFiles);
           applyFilters();
+        } else if (eventName === 'session:expired') {
+          // Coupure WiFi / changement de réseau détecté côté serveur : le
+          // token courant n'est plus valable. On l'oublie pour forcer un
+          // nouvel appairage automatique via /api/session au prochain appel.
+          window.FtsApi.clearToken();
+          window.FtsApi.toast('Connexion réseau modifiée : nouvel appairage…', 'info');
+          window.FtsApi.pair().then(loadFiles).catch(function () {});
         }
       },
     });

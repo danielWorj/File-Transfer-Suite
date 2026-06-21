@@ -849,44 +849,119 @@
 }
 
 /* ==========================================================================
-   Toasts (notifications API)
+   Toasts (notifications API) — CORRIGÉS ET OPTIMISÉS
+   ========================================================================== */
+/* ==========================================================================
+   Toasts (notifications API) — CARTES FINEMENT COLORÉES
    ========================================================================== */
 
 .fts-toast-stack {
   position: fixed;
-  bottom: 1.25rem;
-  right: 1.25rem;
-  z-index: 2000;
+  top: 24px;
+  right: 24px;
+  z-index: 99999 !important; /* S'assure de passer au premier plan absolu */
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: 320px;
+  gap: 12px;
+  max-width: 360px;
+  width: calc(100% - 48px);
 }
 
 .fts-toast {
-  background: var(--fts-blue-900);
-  color: #fff;
-  border-radius: var(--fts-radius-sm);
-  padding: 0.65rem 0.9rem;
-  font-size: 0.8rem;
-  box-shadow: 0 8px 24px rgba(20, 34, 79, 0.22);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  animation: fts-toast-in .18s ease;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  
+  /* Arrière-plan totalement opaque (pas de transparence) et écriture sombre */
+  background-color: #ffffff !important; 
+  color: var(--fts-ink) !important;
+  
+  /* Ombre portée légère et ultra-nette pour casser l'effet flou */
+  box-shadow: 0 4px 16px rgba(20, 34, 79, 0.08); 
+  
+  /* Bordure fine tout autour et bordure accentuée sur la gauche */
+  border: 1px solid var(--fts-border);
+  border-left: 4px solid var(--fts-blue-500); /* Style bleu par défaut */
+  
+  transition: opacity .25s ease, transform .25s ease;
+  animation: fts-toast-in 0.28s cubic-bezier(0.21, 1.02, 0.43, 1.01) forwards;
 }
 
-.fts-toast.is-error {
-  background: var(--fts-danger);
+/* Gestion de l'icône à l'intérieur */
+.fts-toast i {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  color: var(--fts-blue-500);
 }
 
+/* Gestion du texte du message */
+.fts-toast span {
+  line-height: 1.4;
+  word-break: break-word;
+  color: var(--fts-ink) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Déclinaisons : Couleurs fines unies par état (sans dégradé)
+   -------------------------------------------------------------------------- */
+
+/* BLEU — Informations */
+.fts-toast.is-info {
+  background-color: #f4f7fd !important;   /* Teinte bleue très fine */
+  border-color: #d2def5 !important;       /* Bordure fine assortie */
+  border-left-color: var(--fts-blue-500) !important;
+}
+.fts-toast.is-info i {
+  color: var(--fts-blue-500) !important;
+}
+
+/* VERT — Succès */
 .fts-toast.is-success {
-  background: var(--fts-success);
+  background-color: var(--fts-success-soft) !important; /* Teinte verte fine (#E8F6EF) */
+  border-color: #cbe7da !important;
+  border-left-color: var(--fts-success) !important;     /* Vert d'accentuation */
 }
+.fts-toast.is-success i {
+  color: var(--fts-success) !important;
+}
+
+/* ORANGE — Alerte / Attention */
+.fts-toast.is-warning {
+  background-color: var(--fts-warning-soft) !important; /* Teinte orange fine (#FBF3E2) */
+  border-color: #f1e2c3 !important;
+  border-left-color: var(--fts-warning) !important;     /* Orange d'accentuation */
+}
+.fts-toast.is-warning i {
+  color: var(--fts-warning) !important;
+}
+
+/* ROUGE — Erreur */
+.fts-toast.is-error {
+  background-color: var(--fts-danger-soft) !important;  /* Teinte rouge fine (#FBEAEA) */
+  border-color: #f5d2d2 !important;
+  border-left-color: var(--fts-danger) !important;      /* Rouge d'accentuation */
+}
+.fts-toast.is-error i {
+  color: var(--fts-danger) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Animations et effets secondaires
+   -------------------------------------------------------------------------- */
 
 @keyframes fts-toast-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateX(25px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .fts-status-dot.is-pulse {

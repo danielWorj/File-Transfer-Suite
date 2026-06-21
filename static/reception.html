@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recevoir des fichiers</title>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="./vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="./vendor/fontawesome/css/all.min.css">
 <link rel="stylesheet" href="./fts-base.css">
 </head>
 <body>
@@ -103,9 +103,9 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script src="./vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <!-- Client Socket.IO (temps réel) — doit être chargé avant fts-api.js -->
-<script src="https://cdn.socket.io/4.8.3/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="./vendor/socketio/socket.io.min.js" crossorigin="anonymous"></script>
 <script src="./fts-api.js"></script>
 <script src="./fts-sidebar.js"></script>
 
@@ -140,8 +140,9 @@
     }
 
     function renderQr(url) {
-      // Génère un QR code visuel via une API publique (image simple), avec
-      // repli sur l'icône si l'image ne charge pas (offline).
+      // Génère un QR code visuel via le serveur local (route /api/qrcode),
+      // sans dépendance à un service externe : fonctionne entièrement hors
+      // ligne, sur un simple réseau WiFi local sans internet.
       qrBox.innerHTML = '';
       var img = document.createElement('img');
       img.alt = 'QR code de connexion';
@@ -151,7 +152,9 @@
       img.onerror = function () {
         qrBox.innerHTML = '<i class="fa-solid fa-qrcode"></i>';
       };
-      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=148x148&data=' + encodeURIComponent(url);
+      // Cache-bust : évite qu'un navigateur trop zélé garde l'ancienne
+      // image en cache après une régénération de token côté serveur.
+      img.src = window.location.origin + '/api/qrcode?_=' + Date.now();
       qrBox.appendChild(img);
     }
 
@@ -179,6 +182,11 @@
     }
 
     function renderFiles(files) {
+      // Initialise le registre global s'il n'existe pas encore
+      if (!window.activeDownloads) {
+        window.activeDownloads = {};
+      }
+
       files = files || [];
       fileList.innerHTML = '';
       emptyState.classList.toggle('d-none', files.length > 0);
@@ -190,28 +198,98 @@
         .forEach(function (file) {
           var li = document.createElement('li');
           li.className = 'fts-file-item';
+          
+          // On attache un identifiant unique à la ligne HTML
+          li.setAttribute('data-file-id', file.id);
+          
+          // On vérifie si ce fichier est déjà en cours de téléchargement actif
+          var isDownloading = window.activeDownloads.hasOwnProperty(file.id);
+          var currentPercent = isDownloading ? window.activeDownloads[file.id] : 0;
+
           li.innerHTML =
             '<span class="fts-file-icon"><i class="fa-solid ' + fileIcon(file) + '"></i></span>' +
             '<span class="fts-file-info">' +
             '<span class="fts-file-name"></span>' +
             '<span class="fts-file-meta"></span>' +
+            '<div class="fts-progress ' + (isDownloading ? '' : 'd-none') + '" style="margin-top: 6px;">' +
+            '<div class="fts-progress-bar" style="width: ' + currentPercent + '%"></div>' +
+            '</div>' +
             '</span>' +
-            '<button type="button" class="fts-icon-action" title="Télécharger"><i class="fa-solid fa-download"></i></button>';
+            '<button type="button" class="fts-icon-action" title="Télécharger" ' + (isDownloading ? 'disabled' : '') + '>' +
+            (isDownloading ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-download"></i>') +
+            '</button>';
 
           li.querySelector('.fts-file-name').textContent = file.name;
           li.querySelector('.fts-file-meta').textContent =
             window.FtsApi.formatSize(file.size) + ' · reçu le ' + window.FtsApi.formatDate(file.uploaded_at);
 
-          li.querySelector('.fts-icon-action').addEventListener('click', function () {
-            window.FtsApi.downloadFile(file.id, file.name).catch(function (err) {
-              window.FtsApi.toast(err.message, 'error');
+          var btn = li.querySelector('.fts-icon-action');
+          var progressContainer = li.querySelector('.fts-progress');
+          var progressBar = li.querySelector('.fts-progress-bar');
+
+          btn.addEventListener('click', function () {
+            // On enregistre le démarrage de ce téléchargement spécifique
+            window.activeDownloads[file.id] = 0;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+
+            // Appel API avec recherche dynamique de la barre dans le DOM à chaque tick
+            window.FtsApi.downloadFile(file.id, file.name, function (percent) {
+              window.activeDownloads[file.id] = percent;
+              
+              // On cherche l'élément vivant actuel dans le DOM (gère l'écrasement par le rafraîchissement)
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pBar = liveLi.querySelector('.fts-progress-bar');
+                if (pBar) pBar.style.width = percent + '%';
+              }
+            })
+            .then(function () {
+              window.activeDownloads[file.id] = 100;
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pBar = liveLi.querySelector('.fts-progress-bar');
+                if (pBar) pBar.style.width = '100%';
+              }
+              
+              // Petite pause esthétique avant disparition finale
+              setTimeout(function () {
+                delete window.activeDownloads[file.id];
+                var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+                if (liveLi) {
+                  var pContainer = liveLi.querySelector('.fts-progress');
+                  var pBtn = liveLi.querySelector('.fts-icon-action');
+                  if (pContainer) pContainer.classList.add('d-none');
+                  if (pBtn) {
+                    pBtn.disabled = false;
+                    pBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                  }
+                }
+              }, 400);
+            })
+            .catch(function (err) {
+              delete window.activeDownloads[file.id];
+              window.FtsApi.toast(err.message || 'Échec du téléchargement', 'error');
+              
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pContainer = liveLi.querySelector('.fts-progress');
+                var pBtn = liveLi.querySelector('.fts-icon-action');
+                if (pContainer) pContainer.classList.add('d-none');
+                if (pBtn) {
+                  pBtn.disabled = false;
+                  pBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                }
+              }
             });
           });
 
           fileList.appendChild(li);
         });
     }
-
     function loadFiles() {
       window.FtsApi.listFiles()
         .then(function (res) {
@@ -236,6 +314,15 @@
             renderFiles(data.files);
           } else if (eventName === 'transfer:complete') {
             window.FtsApi.toast(data.name + ' reçu avec succès', 'success');
+          } else if (eventName === 'session:expired') {
+            // Le serveur a détecté une coupure WiFi / un changement de
+            // réseau et a régénéré le token : l'ancien est désormais
+            // invalide. On l'oublie côté client et on relance un appairage
+            // complet, ce qui réaffiche un nouveau QR code à jour.
+            window.FtsApi.clearToken();
+            setConnected(false, 'Réseau modifié, nouveau code généré');
+            window.FtsApi.toast('Connexion réseau modifiée : nouveau code de pairing généré', 'info');
+            pairAndStart();
           }
         },
       });
@@ -255,8 +342,9 @@
     }
 
     regenerateBtn.addEventListener('click', function () {
-      // Le token est généré côté serveur au démarrage ; ce bouton ré-affiche
-      // simplement le QR code courant (régénération serveur = redémarrage).
+      // Le token est généré côté serveur (au démarrage, ou automatiquement
+      // si une coupure WiFi est détectée) ; ce bouton ré-affiche simplement
+      // le QR code courant côté client.
       refreshPairingDisplay();
       window.FtsApi.toast('Code de connexion actualisé', 'info');
     });

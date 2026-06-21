@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recevoir des fichiers</title>
+
+<link rel="stylesheet" href="./vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="./vendor/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="./fts-base.css">
+</head>
+<body>
+
+<!--
+  ============================================================================
+  Bloc à copier dans le template du composant Angular "ReceptionComponent".
+  Le mount "#fts-sidebar-mount" est remplacé par fts-sidebar.js : en Angular
+  ce serait simplement <app-sidebar activePage="reception"></app-sidebar>.
+  ============================================================================
+-->
+<div class="fts-app" data-fts-page="reception">
+  <div class="fts-layout">
+
+    <div id="fts-sidebar-mount"></div>
+
+    <main class="fts-main">
+      <div class="fts-shell fts-page-reception">
+
+        <div class="fts-page-head">
+          <div class="fts-eyebrow">Recevoir</div>
+          <h1 class="fts-title">Recevoir des fichiers</h1>
+          <p class="fts-subtitle">Connectez votre téléphone pour démarrer un transfert vers cet ordinateur.</p>
+        </div>
+
+        <div class="row g-4">
+
+          <!-- ======================= Colonne gauche : connexion ======================= -->
+          <div class="col-lg-4">
+            <div class="fts-card">
+              <div class="fts-card-header">
+                <h2>Connexion</h2>
+              </div>
+              <div class="fts-card-body text-center">
+
+                <div class="fts-qr-box" aria-hidden="true" id="reception-qr-box">
+                  <i class="fa-solid fa-qrcode"></i>
+                </div>
+
+                <p class="fts-mono mt-3 mb-1" style="font-size:.78rem; color: var(--fts-muted);" id="reception-pairing-url">
+                  …
+                </p>
+
+                <div class="mb-3">
+                  <span class="fts-badge fts-badge-pending" id="reception-status-badge">
+                    <span class="fts-status-dot is-waiting"></span>
+                    <span id="reception-status-text">En attente d'un appareil</span>
+                  </span>
+                </div>
+
+                <hr class="fts-divider">
+
+                <p class="fts-subtitle mb-3" style="font-size:.82rem;">
+                  Ouvrez l'application sur votre téléphone puis scannez ce code,
+                  ou saisissez l'adresse manuellement.
+                </p>
+
+                <button type="button" class="fts-btn fts-btn-outline fts-btn-block" id="reception-regenerate-btn">
+                  <i class="fa-solid fa-rotate"></i>
+                  Régénérer le code
+                </button>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ======================= Colonne droite : fichiers reçus ======================= -->
+          <div class="col-lg-8">
+            <div class="fts-card">
+              <div class="fts-card-header">
+                <h2>Fichiers reçus</h2>
+                <span class="fts-meta" id="reception-meta">0 fichier</span>
+              </div>
+
+              <div class="fts-card-body">
+                <ul class="fts-file-list" id="reception-file-list"></ul>
+
+                <div class="fts-empty" id="reception-empty">
+                  <i class="fa-regular fa-folder-open"></i>
+                  <p>Aucun fichier reçu pour l'instant. En attente d'un envoi depuis votre téléphone.</p>
+                </div>
+              </div>
+
+              <div class="fts-card-footer d-flex justify-content-between align-items-center">
+                <span class="fts-subtitle" style="font-size:.8rem;">Les fichiers reçus restent disponibles tant que le serveur tourne.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script src="./vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- Client Socket.IO (temps réel) — doit être chargé avant fts-api.js -->
+<script src="./vendor/socketio/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="./fts-api.js"></script>
+<script src="./fts-sidebar.js"></script>
+
+<script>
+  // ==========================================================================
+  // Page "Réception" : consomme l'API réelle (pairing, liste, WebSocket).
+  // En Angular, ceci correspond au ReceptionComponent + un service WebSocket
+  // partagé (gestion de l'événement "transfer:complete" / "files:updated").
+  // ==========================================================================
+  (function () {
+    var root = document.querySelector('.fts-page-reception');
+    if (!root || !window.FtsApi) return;
+
+    var qrBox = document.getElementById('reception-qr-box');
+    var pairingUrlEl = document.getElementById('reception-pairing-url');
+    var statusBadge = document.getElementById('reception-status-badge');
+    var statusDot = statusBadge.querySelector('.fts-status-dot');
+    var statusText = document.getElementById('reception-status-text');
+    var regenerateBtn = document.getElementById('reception-regenerate-btn');
+    var fileList = document.getElementById('reception-file-list');
+    var emptyState = document.getElementById('reception-empty');
+    var metaEl = document.getElementById('reception-meta');
+
+    var realtime = null;
+
+    function setConnected(connected, label) {
+      statusDot.classList.remove('is-waiting', 'is-online', 'is-offline');
+      statusDot.classList.add(connected ? 'is-online' : 'is-waiting');
+      statusText.textContent = label || (connected ? 'Appareil connecté' : "En attente d'un appareil");
+      statusBadge.classList.toggle('fts-badge-pending', !connected);
+      statusBadge.classList.toggle('fts-badge-success', connected);
+    }
+
+    function renderQr(url) {
+      // Génère un QR code visuel via le serveur local (route /api/qrcode),
+      // sans dépendance à un service externe : fonctionne entièrement hors
+      // ligne, sur un simple réseau WiFi local sans internet.
+      qrBox.innerHTML = '';
+      var img = document.createElement('img');
+      img.alt = 'QR code de connexion';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'contain';
+      img.onerror = function () {
+        qrBox.innerHTML = '<i class="fa-solid fa-qrcode"></i>';
+      };
+      // Cache-bust : évite qu'un navigateur trop zélé garde l'ancienne
+      // image en cache après une régénération de token côté serveur.
+      img.src = window.location.origin + '/api/qrcode?_=' + Date.now();
+      qrBox.appendChild(img);
+    }
+
+    function buildPairingUrl() {
+      var token = window.FtsApi.getToken();
+      var url = new URL(window.location.origin + '/api/pair');
+      if (token) url.searchParams.set('token', token);
+      return url.toString();
+    }
+
+    function refreshPairingDisplay() {
+      var token = window.FtsApi.getToken();
+      if (!token) {
+        pairingUrlEl.textContent = 'Génération du code…';
+        qrBox.innerHTML = '<i class="fa-solid fa-qrcode"></i>';
+        return;
+      }
+      var url = buildPairingUrl();
+      pairingUrlEl.textContent = window.location.host;
+      renderQr(url);
+    }
+
+    function fileIcon(file) {
+      return file.direction === 'mobile-to-pc' ? 'fa-mobile-screen' : window.FtsApi.iconForFile(file.name);
+    }
+
+    function renderFiles(files) {
+      // Initialise le registre global s'il n'existe pas encore
+      if (!window.activeDownloads) {
+        window.activeDownloads = {};
+      }
+
+      files = files || [];
+      fileList.innerHTML = '';
+      emptyState.classList.toggle('d-none', files.length > 0);
+      metaEl.textContent = files.length + (files.length > 1 ? ' fichiers' : ' fichier');
+
+      files
+        .slice()
+        .reverse()
+        .forEach(function (file) {
+          var li = document.createElement('li');
+          li.className = 'fts-file-item';
+          
+          // On attache un identifiant unique à la ligne HTML
+          li.setAttribute('data-file-id', file.id);
+          
+          // On vérifie si ce fichier est déjà en cours de téléchargement actif
+          var isDownloading = window.activeDownloads.hasOwnProperty(file.id);
+          var currentPercent = isDownloading ? window.activeDownloads[file.id] : 0;
+
+          li.innerHTML =
+            '<span class="fts-file-icon"><i class="fa-solid ' + fileIcon(file) + '"></i></span>' +
+            '<span class="fts-file-info">' +
+            '<span class="fts-file-name"></span>' +
+            '<span class="fts-file-meta"></span>' +
+            '<div class="fts-progress ' + (isDownloading ? '' : 'd-none') + '" style="margin-top: 6px;">' +
+            '<div class="fts-progress-bar" style="width: ' + currentPercent + '%"></div>' +
+            '</div>' +
+            '</span>' +
+            '<button type="button" class="fts-icon-action" title="Télécharger" ' + (isDownloading ? 'disabled' : '') + '>' +
+            (isDownloading ? '<i class="fa-solid fa-spinner fa-spin"></i>' : '<i class="fa-solid fa-download"></i>') +
+            '</button>';
+
+          li.querySelector('.fts-file-name').textContent = file.name;
+          li.querySelector('.fts-file-meta').textContent =
+            window.FtsApi.formatSize(file.size) + ' · reçu le ' + window.FtsApi.formatDate(file.uploaded_at);
+
+          var btn = li.querySelector('.fts-icon-action');
+          var progressContainer = li.querySelector('.fts-progress');
+          var progressBar = li.querySelector('.fts-progress-bar');
+
+          btn.addEventListener('click', function () {
+            // On enregistre le démarrage de ce téléchargement spécifique
+            window.activeDownloads[file.id] = 0;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+
+            // Appel API avec recherche dynamique de la barre dans le DOM à chaque tick
+            window.FtsApi.downloadFile(file.id, file.name, function (percent) {
+              window.activeDownloads[file.id] = percent;
+              
+              // On cherche l'élément vivant actuel dans le DOM (gère l'écrasement par le rafraîchissement)
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pBar = liveLi.querySelector('.fts-progress-bar');
+                if (pBar) pBar.style.width = percent + '%';
+              }
+            })
+            .then(function () {
+              window.activeDownloads[file.id] = 100;
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pBar = liveLi.querySelector('.fts-progress-bar');
+                if (pBar) pBar.style.width = '100%';
+              }
+              
+              // Petite pause esthétique avant disparition finale
+              setTimeout(function () {
+                delete window.activeDownloads[file.id];
+                var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+                if (liveLi) {
+                  var pContainer = liveLi.querySelector('.fts-progress');
+                  var pBtn = liveLi.querySelector('.fts-icon-action');
+                  if (pContainer) pContainer.classList.add('d-none');
+                  if (pBtn) {
+                    pBtn.disabled = false;
+                    pBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                  }
+                }
+              }, 400);
+            })
+            .catch(function (err) {
+              delete window.activeDownloads[file.id];
+              window.FtsApi.toast(err.message || 'Échec du téléchargement', 'error');
+              
+              var liveLi = fileList.querySelector('[data-file-id="' + file.id + '"]');
+              if (liveLi) {
+                var pContainer = liveLi.querySelector('.fts-progress');
+                var pBtn = liveLi.querySelector('.fts-icon-action');
+                if (pContainer) pContainer.classList.add('d-none');
+                if (pBtn) {
+                  pBtn.disabled = false;
+                  pBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
+                }
+              }
+            });
+          });
+
+          fileList.appendChild(li);
+        });
+    }
+    function loadFiles() {
+      window.FtsApi.listFiles()
+        .then(function (res) {
+          renderFiles(res.files);
+        })
+        .catch(function () {
+          /* pas encore appairé : liste vide tant que le token n'est pas validé */
+        });
+    }
+
+    function startRealtime() {
+      if (realtime) realtime.close();
+      realtime = window.FtsApi.connectRealtime({
+        onOpen: function () {
+          setConnected(true);
+        },
+        onClose: function () {
+          setConnected(false);
+        },
+        onEvent: function (eventName, data) {
+          if (eventName === 'files:updated') {
+            renderFiles(data.files);
+          } else if (eventName === 'transfer:complete') {
+            window.FtsApi.toast(data.name + ' reçu avec succès', 'success');
+          } else if (eventName === 'session:expired') {
+            // Le serveur a détecté une coupure WiFi / un changement de
+            // réseau et a régénéré le token : l'ancien est désormais
+            // invalide. On l'oublie côté client et on relance un appairage
+            // complet, ce qui réaffiche un nouveau QR code à jour.
+            window.FtsApi.clearToken();
+            setConnected(false, 'Réseau modifié, nouveau code généré');
+            window.FtsApi.toast('Connexion réseau modifiée : nouveau code de pairing généré', 'info');
+            pairAndStart();
+          }
+        },
+      });
+    }
+
+    function pairAndStart() {
+      window.FtsApi
+        .pair()
+        .then(function () {
+          refreshPairingDisplay();
+          loadFiles();
+          startRealtime();
+        })
+        .catch(function () {
+          refreshPairingDisplay();
+        });
+    }
+
+    regenerateBtn.addEventListener('click', function () {
+      // Le token est généré côté serveur (au démarrage, ou automatiquement
+      // si une coupure WiFi est détectée) ; ce bouton ré-affiche simplement
+      // le QR code courant côté client.
+      refreshPairingDisplay();
+      window.FtsApi.toast('Code de connexion actualisé', 'info');
+    });
+
+    refreshPairingDisplay();
+    pairAndStart();
+    loadFiles();
+    setInterval(loadFiles, 6000);
+  })();
+</script>
+
+</body>
+</html>

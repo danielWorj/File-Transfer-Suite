@@ -8,9 +8,12 @@ Toute la logique métier est déléguée au service `transfert_service`
 - gérer les connexions WebSocket pour notifier les clients en temps réel
 """
 
+import io
 from typing import Optional
 from functools import wraps
 
+import eventlet
+import qrcode
 from flask import Blueprint, request, jsonify, send_file, abort
 from flask_socketio import SocketIO, emit, disconnect
 
@@ -39,11 +42,42 @@ class ConnectionManager:
     def broadcast(self, event: str, payload: dict) -> None:
         """Envoie un événement JSON à tous les clients connectés."""
         message = {"event": event, "data": payload}
-        socketio.emit(event, message, broadcast=True, namespace='/api/ws')
+        socketio.emit(event, message, namespace='/api/ws')
 
 
 manager = ConnectionManager()
 socketio = SocketIO()
+
+# Intervalle (en secondes) entre deux vérifications de l'IP locale, pour
+# détecter une coupure WiFi / un changement de réseau.
+NETWORK_CHECK_INTERVAL_SECONDS = 5
+
+
+def _network_watch_loop():
+    """
+    Tâche de fond (greenlet eventlet) : vérifie périodiquement que l'IP
+    locale de la machine n'a pas changé. Si le WiFi est coupé ou que la
+    machine a rejoint un autre réseau, le token est régénéré côté service
+    (voir TransfertService.check_network_or_invalidate) et les clients
+    encore connectés sont notifiés pour qu'ils invalident leur session
+    et réaffichent un nouveau QR code.
+    """
+    while True:
+        eventlet.sleep(NETWORK_CHECK_INTERVAL_SECONDS)
+        try:
+            if transfert_service.check_network_or_invalidate():
+                manager.broadcast("session:expired", {
+                    "reason": "network-changed",
+                })
+        except Exception:
+            # Ne jamais laisser la boucle de surveillance mourir sur une
+            # erreur ponctuelle (ex: résolution réseau temporairement KO).
+            pass
+
+
+def start_network_watch():
+    """Démarre la surveillance réseau en arrière-plan (appelé depuis main.py)."""
+    eventlet.spawn(_network_watch_loop)
 
 
 # ---------- Dépendance d'authentification ----------
@@ -113,6 +147,48 @@ def session():
     if not token:
         return jsonify({"detail": "Aucune session active"}), 404
     return jsonify({"token": token})
+
+
+@transfert_bp.route("/qrcode", methods=["GET"])
+def qrcode_image():
+    """
+    Génère et retourne le QR code de pairing en PNG, entièrement côté serveur
+    (aucun appel à un service externe type api.qrserver.com).
+
+    Volontairement accessible sans authentification : c'est ce QR code qui
+    contient le token, donc l'exiger en amont serait une impasse. Le risque
+    est le même que celui déjà accepté pour /session (token visible en clair
+    sur le réseau local), seulement encodé en image plutôt qu'en JSON.
+    """
+    token = transfert_service.current_token()
+    if not token:
+        return jsonify({"detail": "Aucune session active"}), 404
+
+    # Reconstruit la même URL de pairing que celle affichée au démarrage
+    # dans le terminal (voir print_pairing_qr_code dans main.py), à partir
+    # de cette requête HTTP plutôt que de recalculer l'IP locale ici.
+    # Pointe vers la page web réelle (et non vers /api/pair, qui est une
+    # route purement API en POST attendant du JSON : un scan de QR code
+    # ouvre toujours l'URL en GET dans le navigateur, donc /api/pair ne
+    # mène à aucune page utilisable). fts-api.js lit le paramètre ?token=
+    # au chargement de la page et appelle lui-même /api/pair en arrière-plan
+    # (voir readTokenFromUrl / ensureToken / pair() dans fts-api.js).
+    pairing_url = f"{request.scheme}://{request.host}/app/reception.html?token={token}"
+
+    qr = qrcode.QRCode(border=2, box_size=8)
+    qr.add_data(pairing_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    response = send_file(buffer, mimetype="image/png")
+    # Le token change au redémarrage : on évite que le navigateur garde
+    # une vieille image en cache après une régénération de session.
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @transfert_bp.route("/upload", methods=["POST"])
